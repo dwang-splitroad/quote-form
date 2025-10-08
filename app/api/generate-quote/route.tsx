@@ -87,15 +87,16 @@ export async function POST(request: NextRequest) {
       // Configure SendGrid
       sgMail.setApiKey(apiKey)
 
-      // Send to dennis@splitroadmedia.com and dwang0816@gmail.com
-      const recipients = ["dennis@splitroadmedia.com", "dwang0816@gmail.com"]
-      console.log("[v0] Sending email to:", recipients.join(", "))
+      // Send to client with CC to accounting and Dennis
+      console.log("[v0] Sending email to client:", data.client.email)
+      console.log("[v0] CC: accounting@splitroadmedia.com, dennis@splitroadmedia.com")
 
       // Convert PDF buffer to base64 for SendGrid
       const base64PDF = pdfBuffer.toString("base64")
 
       const msg = {
-        to: recipients,
+        to: data.client.email,
+        cc: ["accounting@splitroadmedia.com", "dennis@splitroadmedia.com"],
         from: "hello@splitroadmedia.com",
         subject: `Quote ${data.quote.number} for ${data.client.company}`,
         html: `

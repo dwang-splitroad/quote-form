@@ -166,7 +166,7 @@ export default function QuoteForm() {
         const result = await response.json()
         toast({
           title: "Success!",
-          description: result.message || "Quote has been generated and sent to accounting@splitroadmedia.com and the client",
+          description: result.message || "Quote has been generated and sent to the client (CC: accounting and dennis@splitroadmedia.com)",
         })
       } else {
         const errorData = await response.json()
