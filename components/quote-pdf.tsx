@@ -241,7 +241,7 @@ export function QuotePDF({ data }: QuotePDFProps) {
             <View style={styles.tableHeader}>
               <Text style={styles.descriptionCol}>DESCRIPTION</Text>
               <Text style={styles.qtyCol}>QTY</Text>
-              <Text style={styles.totalCol}>TOTAL</Text>
+              <Text style={styles.totalCol}>PRICE</Text>
             </View>
 
             {/* Table Rows with alternating backgrounds */}
