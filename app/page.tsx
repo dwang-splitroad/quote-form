@@ -130,6 +130,12 @@ export default function QuoteForm() {
     }, 0)
   }
 
+  const calculateProjectTotal = (tableIndex: number) => {
+    return tables[tableIndex].lineItems.reduce((sum, item) => {
+      return sum + (Number.parseFloat(item.total) || 0)
+    }, 0)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -466,6 +472,16 @@ export default function QuoteForm() {
                     Add Line Item
                   </Button>
                 </div>
+
+                {/* Project Total */}
+                <div className="flex justify-end mt-4">
+                  <div className="bg-primary/10 rounded-lg px-6 py-3 border border-primary/20">
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm font-bold text-primary uppercase tracking-wide">Project Total:</span>
+                      <span className="text-2xl font-bold text-primary">${calculateProjectTotal(tableIndex).toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             ))}
 
@@ -485,7 +501,7 @@ export default function QuoteForm() {
             {/* Total */}
             <div className="flex justify-end">
               <div className="w-full max-w-sm space-y-3 rounded-xl border-2 border-primary bg-gradient-to-br from-primary/10 to-primary/5 p-6 shadow-lg">
-                <Label className="text-lg font-bold text-primary uppercase tracking-wide">Grand Total</Label>
+                <Label className="text-lg font-bold text-primary uppercase tracking-wide">Total</Label>
                 <div className="text-4xl font-bold text-primary">${calculateTotal().toFixed(2)}</div>
               </div>
             </div>
