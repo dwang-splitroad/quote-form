@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { renderToBuffer } from "@react-pdf/renderer"
 import { QuotePDF } from "@/components/quote-pdf"
-import { Resend } from "resend"
+import sgMail from "@sendgrid/mail"
+import { Dropbox } from "dropbox"
 import * as fs from "fs"
 import * as path from "path"
 
@@ -27,24 +28,67 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] PDF generated successfully, size:", pdfBuffer.length, "bytes")
 
-    // Debug: Check if API key is loaded
-    const apiKey = process.env.RESEND_API_KEY || "re_SEjsFjs6_EYEELDLxAJmBW9ZuLRqhNfEo"
-    console.log("[v0] RESEND_API_KEY exists:", !!process.env.RESEND_API_KEY)
-    console.log("[v0] Using API key (hardcoded fallback if needed)")
+    // Upload PDF to Dropbox
+    const dropboxToken = process.env.DROPBOX_ACCESS_TOKEN
+    const dropboxTeamMemberId = process.env.DROPBOX_TEAM_MEMBER_ID
+    const dropboxRootNamespace = process.env.DROPBOX_ROOT_NAMESPACE
+    
+    if (dropboxToken) {
+      try {
+        const dbxConfig: any = { accessToken: dropboxToken }
+        
+        // For Dropbox Business teams, use selectUser with team_member_id
+        if (dropboxTeamMemberId) {
+          dbxConfig.selectUser = dropboxTeamMemberId
+        }
+        
+        // Use team root namespace to access team space folders
+        if (dropboxRootNamespace) {
+          dbxConfig.pathRoot = JSON.stringify({
+            ".tag": "root",
+            "root": dropboxRootNamespace
+          })
+        }
+        
+        const dbx = new Dropbox(dbxConfig)
+        const dropboxPath = `/Jobs/Quotes/quote-${data.quote.number}.pdf`
+        
+        console.log("[v0] Uploading PDF to Dropbox:", dropboxPath)
+        
+        const dropboxResult = await dbx.filesUpload({
+          path: dropboxPath,
+          contents: pdfBuffer,
+          mode: { ".tag": "overwrite" }, // Overwrite if file exists
+          autorename: false,
+        })
+        
+        console.log("[v0] PDF uploaded to Dropbox successfully:", dropboxResult.result.path_display)
+      } catch (dropboxError) {
+        console.error("[v0] Error uploading to Dropbox:", dropboxError)
+        // Continue with email sending even if Dropbox upload fails
+      }
+    } else {
+      console.log("[v0] No DROPBOX_ACCESS_TOKEN found, skipping Dropbox upload")
+    }
+
+    // Check if SendGrid API key is loaded
+    const apiKey = process.env.SENDGRID_API_KEY
+    console.log("[v0] SENDGRID_API_KEY exists:", !!apiKey)
 
     if (apiKey) {
-      const resend = new Resend(apiKey)
+      // Configure SendGrid
+      sgMail.setApiKey(apiKey)
 
-      // Send to accounting and the client
-      const recipients = ["accounting@splitroadmedia.com", data.client.email]
+      // Send to dennis@splitroadmedia.com and dwang0816@gmail.com
+      const recipients = ["dennis@splitroadmedia.com", "dwang0816@gmail.com"]
       console.log("[v0] Sending email to:", recipients.join(", "))
 
-      // Convert PDF buffer to base64 for Resend
+      // Convert PDF buffer to base64 for SendGrid
       const base64PDF = pdfBuffer.toString("base64")
 
-      const emailResult = await resend.emails.send({
-        from: "onboarding@resend.dev", // Using Resend's verified test domain - change to "quotes@splitroadmedia.com" after domain verification
+      const msg = {
         to: recipients,
+        from: "hello@splitroadmedia.com",
         subject: `Quote ${data.quote.number} for ${data.client.company}`,
         html: `
           <h2>New Quote Generated</h2>
@@ -56,26 +100,25 @@ export async function POST(request: NextRequest) {
         `,
         attachments: [
           {
-            filename: `quote-${data.quote.number}.pdf`,
             content: base64PDF,
+            filename: `quote-${data.quote.number}.pdf`,
+            type: "application/pdf",
+            disposition: "attachment",
           },
         ],
-      })
-
-      console.log("[v0] Email sent successfully:", emailResult)
-
-      // Check if email was sent successfully
-      if (emailResult.error) {
-        throw new Error(`Failed to send email: ${emailResult.error.message}`)
       }
+
+      const emailResult = await sgMail.send(msg)
+
+      console.log("[v0] Email sent successfully:", emailResult[0].statusCode)
 
       return NextResponse.json({
         success: true,
         message: "Quote generated and sent successfully",
-        emailId: emailResult.data?.id,
+        emailStatusCode: emailResult[0].statusCode,
       })
     } else {
-      console.log("[v0] No RESEND_API_KEY found, returning PDF as download")
+      console.log("[v0] No SENDGRID_API_KEY found, returning PDF as download")
 
       // If no email service configured, return PDF as download
       return new NextResponse(pdfBuffer, {

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -43,6 +43,30 @@ export default function QuoteForm() {
   // Quote Info
   const [quoteNumber, setQuoteNumber] = useState("")
   const [quoteDate, setQuoteDate] = useState(new Date().toLocaleDateString("en-US"))
+
+  // Function to calculate days since January 1, 1900
+  const getDaysSince1900 = () => {
+    const epochStart = new Date(1900, 0, 1) // January 1, 1900
+    const today = new Date()
+    const diffTime = today.getTime() - epochStart.getTime()
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays
+  }
+
+  // Auto-generate reference number when client name changes
+  useEffect(() => {
+    if (clientName.trim()) {
+      // Get first 3 letters of client name (uppercase)
+      const namePrefix = clientName.trim().substring(0, 3).toUpperCase()
+      // Get epoch days
+      const epochDays = getDaysSince1900()
+      // Generate reference number
+      const refNumber = `${namePrefix}${epochDays}`
+      setQuoteNumber(refNumber)
+    } else {
+      setQuoteNumber("")
+    }
+  }, [clientName])
 
   // Tables
   const [tables, setTables] = useState<TableSection[]>([
@@ -288,13 +312,12 @@ export default function QuoteForm() {
                   <Label htmlFor="quoteNumber" className="text-sm font-bold text-primary uppercase tracking-wide">
                     Reference No.
                   </Label>
-                  <Input
+                  <div
                     id="quoteNumber"
-                    value={quoteNumber}
-                    onChange={(e) => setQuoteNumber(e.target.value)}
-                    className="border-2 border-primary/30 bg-card focus:border-primary transition-colors"
-                    required
-                  />
+                    className="border-2 border-primary/30 bg-muted/50 px-3 py-2 rounded-md text-base font-mono font-semibold text-primary h-10 flex items-center"
+                  >
+                    {quoteNumber || "Auto-generated from name"}
+                  </div>
                 </div>
               </div>
             </div>
