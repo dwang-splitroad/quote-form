@@ -3,8 +3,13 @@ import { renderToBuffer } from "@react-pdf/renderer"
 import { QuotePDF } from "@/components/quote-pdf"
 import sgMail from "@sendgrid/mail"
 import { Dropbox } from "dropbox"
+import fetch from "node-fetch"
 import * as fs from "fs"
 import * as path from "path"
+
+// Force Node.js runtime
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,7 +40,10 @@ export async function POST(request: NextRequest) {
     
     if (dropboxToken) {
       try {
-        const dbxConfig: any = { accessToken: dropboxToken }
+        const dbxConfig: any = { 
+          accessToken: dropboxToken,
+          fetch: fetch as any // Provide fetch implementation for Node.js
+        }
         
         // For Dropbox Business teams, use selectUser with team_member_id
         if (dropboxTeamMemberId) {
