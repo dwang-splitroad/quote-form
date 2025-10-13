@@ -100,11 +100,13 @@ export async function POST(request: NextRequest) {
         from: "hello@splitroadmedia.com",
         subject: `Quote ${data.quote.number} for ${data.client.company}`,
         html: `
-          <h2>New Quote Generated</h2>
+          <div style="text-align: center; margin-bottom: 30px;">
+            <img src="${logoBase64}" alt="Split Road Media" style="max-width: 250px; height: auto;" />
+          </div>
+          <h2>Quote for ${data.client.company}</h2>
           <p><strong>Quote Number:</strong> ${data.quote.number}</p>
           <p><strong>Date:</strong> ${data.quote.date}</p>
           <p><strong>Client:</strong> ${data.client.name} - ${data.client.company}</p>
-          <p><strong>Total:</strong> $${data.total.toFixed(2)}</p>
           <p>Please find the detailed quote attached as a PDF.</p>
         `,
         attachments: [
