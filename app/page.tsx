@@ -185,9 +185,16 @@ export default function QuoteForm() {
         const result = await response.json()
         console.log("[v0] Server response:", result)
         
-        const userCcList = ccEmails.split(',').map(e => e.trim()).filter(e => e.length > 0)
+        // Build deduplicated CC list (same logic as backend)
+        const userCcList = ccEmails.split(',').map(e => e.trim().toLowerCase()).filter(e => e.length > 0)
         const allCcEmails = ['dennis@splitroadmedia.com', ...userCcList]
-        const ccMessage = allCcEmails.length > 0 ? ` (CC: ${allCcEmails.join(', ')})` : ''
+        const uniqueCcEmails = [...new Set(allCcEmails)]
+        
+        // Remove any that are already in TO list
+        const toEmails = [clientEmail.toLowerCase(), 'accounting@splitroadmedia.com', 'hello@splitroadmedia.com']
+        const filteredCcEmails = uniqueCcEmails.filter(email => !toEmails.includes(email.toLowerCase()))
+        
+        const ccMessage = filteredCcEmails.length > 0 ? ` (CC: ${filteredCcEmails.join(', ')})` : ''
         const message = result.message || `Quote has been generated and sent to ${clientEmail}, accounting@splitroadmedia.com, and hello@splitroadmedia.com${ccMessage}`
         
         console.log("[v0] Opening success modal with message:", message)

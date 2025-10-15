@@ -125,24 +125,32 @@ export async function POST(request: NextRequest) {
 
       // Parse CC emails from comma-separated string and add hardcoded dennis email
       const userCcEmails = data.ccEmails 
-        ? data.ccEmails.split(',').map((email: string) => email.trim()).filter((email: string) => email.length > 0)
+        ? data.ccEmails.split(',').map((email: string) => email.trim().toLowerCase()).filter((email: string) => email.length > 0)
         : []
-      const ccEmailList = ["dennis@splitroadmedia.com", ...userCcEmails]
+      
+      // Add dennis email if not already in user's CC list, and remove any duplicates
+      const allCcEmails = ["dennis@splitroadmedia.com", ...userCcEmails]
+      const ccEmailList = [...new Set(allCcEmails)] // Remove duplicates
+      
+      // Also remove any emails that are already in the TO list
+      const toEmails = [data.client.email.toLowerCase(), "accounting@splitroadmedia.com", "hello@splitroadmedia.com"]
+      const filteredCcList = ccEmailList.filter(email => !toEmails.includes(email.toLowerCase()))
 
       // Send to client, accounting, and hello (as primary recipients), with CC to dennis and user-specified emails
       console.log("[v0] Sending email to:", data.client.email, "accounting@splitroadmedia.com, and hello@splitroadmedia.com")
-      console.log("[v0] CC:", ccEmailList.join(", "))
+      console.log("[v0] CC (before deduplication):", ccEmailList.join(", "))
+      console.log("[v0] CC (after deduplication):", filteredCcList.join(", "))
 
       // Convert PDF buffer to base64 for SendGrid
       const base64PDF = pdfBuffer.toString("base64")
 
       // Validate all email addresses
-      const allEmails = [data.client.email, "accounting@splitroadmedia.com", "hello@splitroadmedia.com", ...ccEmailList]
+      const allEmails = [data.client.email, "accounting@splitroadmedia.com", "hello@splitroadmedia.com", ...filteredCcList]
       console.log("[v0] All email addresses to send to:", allEmails)
       
       const msg = {
         to: [data.client.email, "accounting@splitroadmedia.com", "hello@splitroadmedia.com"],
-        cc: ccEmailList.length > 0 ? ccEmailList : undefined,
+        cc: filteredCcList.length > 0 ? filteredCcList : undefined,
         from: "hello@splitroadmedia.com",
         subject: `Quote ${data.quote.number} for ${data.client.company}`,
         html: `
