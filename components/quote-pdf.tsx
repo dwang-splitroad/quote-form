@@ -254,8 +254,6 @@ export function QuotePDF({ data }: QuotePDFProps) {
                       key={i} 
                       style={{ 
                         marginTop: i > 0 ? 4 : 0,
-                        fontFamily: 'Courier',
-                        fontSize: 9,
                         lineHeight: 1.5
                       }}
                     >
