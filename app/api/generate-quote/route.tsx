@@ -87,16 +87,22 @@ export async function POST(request: NextRequest) {
       // Configure SendGrid
       sgMail.setApiKey(apiKey)
 
-      // Send to client with CC to accounting and Dennis
-      console.log("[v0] Sending email to client:", data.client.email)
-      console.log("[v0] CC: accounting@splitroadmedia.com, dennis@splitroadmedia.com")
+      // Parse CC emails from comma-separated string and add hardcoded dennis email
+      const userCcEmails = data.ccEmails 
+        ? data.ccEmails.split(',').map((email: string) => email.trim()).filter((email: string) => email.length > 0)
+        : []
+      const ccEmailList = ["dennis@splitroadmedia.com", ...userCcEmails]
+
+      // Send to client and accounting (as primary recipients), with CC to dennis and user-specified emails
+      console.log("[v0] Sending email to:", data.client.email, "and accounting@splitroadmedia.com")
+      console.log("[v0] CC:", ccEmailList.join(", "))
 
       // Convert PDF buffer to base64 for SendGrid
       const base64PDF = pdfBuffer.toString("base64")
 
       const msg = {
-        to: data.client.email,
-        cc: ["accounting@splitroadmedia.com", "dennis@splitroadmedia.com"],
+        to: [data.client.email, "accounting@splitroadmedia.com"],
+        cc: ccEmailList,
         from: "hello@splitroadmedia.com",
         subject: `Quote ${data.quote.number} for ${data.client.company}`,
         html: `

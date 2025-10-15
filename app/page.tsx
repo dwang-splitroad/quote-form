@@ -39,6 +39,7 @@ export default function QuoteForm() {
   const [clientAddress, setClientAddress] = useState("")
   const [clientPhone, setClientPhone] = useState("")
   const [clientEmail, setClientEmail] = useState("")
+  const [ccEmails, setCcEmails] = useState("")
 
   // Quote Info
   const [quoteNumber, setQuoteNumber] = useState("")
@@ -163,6 +164,7 @@ export default function QuoteForm() {
             number: quoteNumber,
             date: quoteDate,
           },
+          ccEmails: ccEmails,
           tables,
           total: calculateTotal(),
         }),
@@ -170,9 +172,12 @@ export default function QuoteForm() {
 
       if (response.ok) {
         const result = await response.json()
+        const userCcList = ccEmails.split(',').map(e => e.trim()).filter(e => e.length > 0)
+        const allCcEmails = ['dennis@splitroadmedia.com', ...userCcList]
+        const ccMessage = allCcEmails.length > 0 ? ` (CC: ${allCcEmails.join(', ')})` : ''
         toast({
           title: "Success!",
-          description: result.message || "Quote has been generated and sent to the client (CC: accounting and dennis@splitroadmedia.com)",
+          description: result.message || `Quote has been generated and sent to ${clientEmail} and accounting@splitroadmedia.com${ccMessage}`,
         })
       } else {
         const errorData = await response.json()
@@ -324,6 +329,19 @@ export default function QuoteForm() {
                   >
                     {quoteNumber || "Auto-generated from name"}
                   </div>
+                </div>
+                <div className="space-y-2.5 md:col-span-2">
+                  <Label htmlFor="ccEmails" className="text-sm font-bold text-primary uppercase tracking-wide">
+                    CC Emails <span className="text-xs font-normal text-muted-foreground">(comma-separated)</span>
+                  </Label>
+                  <Textarea
+                    id="ccEmails"
+                    value={ccEmails}
+                    onChange={(e) => setCcEmails(e.target.value)}
+                    placeholder="email1@example.com, email2@example.com"
+                    className="border-2 border-primary/30 bg-card focus:border-primary transition-colors resize-none"
+                    rows={2}
+                  />
                 </div>
               </div>
             </div>
