@@ -54,20 +54,20 @@ export default function QuoteForm() {
     return diffDays
   }
 
-  // Auto-generate reference number when client name changes
+  // Auto-generate reference number when client company changes
   useEffect(() => {
-    if (clientName.trim()) {
-      // Get first 3 letters of client name (uppercase)
-      const namePrefix = clientName.trim().substring(0, 3).toUpperCase()
+    if (clientCompany.trim()) {
+      // Get first 3 letters of company name (uppercase)
+      const companyPrefix = clientCompany.trim().substring(0, 3).toUpperCase()
       // Get epoch days
       const epochDays = getDaysSince1900()
       // Generate reference number
-      const refNumber = `${namePrefix}${epochDays}`
+      const refNumber = `${companyPrefix}${epochDays}`
       setQuoteNumber(refNumber)
     } else {
       setQuoteNumber("")
     }
-  }, [clientName])
+  }, [clientCompany])
 
   // Tables
   const [tables, setTables] = useState<TableSection[]>([
@@ -327,7 +327,7 @@ export default function QuoteForm() {
                     id="quoteNumber"
                     className="border-2 border-primary/30 bg-muted/50 px-3 py-2 rounded-md text-base font-mono font-semibold text-primary h-10 flex items-center"
                   >
-                    {quoteNumber || "Auto-generated from name"}
+                    {quoteNumber || "Auto-generated from company"}
                   </div>
                 </div>
                 <div className="space-y-2.5 md:col-span-2">
