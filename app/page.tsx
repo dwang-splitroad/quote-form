@@ -177,7 +177,7 @@ export default function QuoteForm() {
         const ccMessage = allCcEmails.length > 0 ? ` (CC: ${allCcEmails.join(', ')})` : ''
         toast({
           title: "Success!",
-          description: result.message || `Quote has been generated and sent to ${clientEmail} and accounting@splitroadmedia.com${ccMessage}`,
+          description: result.message || `Quote has been generated and sent to ${clientEmail}, accounting@splitroadmedia.com, and hello@splitroadmedia.com${ccMessage}`,
         })
       } else {
         const errorData = await response.json()
@@ -372,22 +372,22 @@ export default function QuoteForm() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Sales">Sales</SelectItem>
-                      <SelectItem value="Sales:Apparel">Sales: Apparel</SelectItem>
-                      <SelectItem value="Sales:Graphic Design">Sales: Graphic Design</SelectItem>
-                      <SelectItem value="Sales:Labor">Sales: Labor</SelectItem>
-                      <SelectItem value="Sales:Mail Processing">Sales: Mail Processing</SelectItem>
-                      <SelectItem value="Sales:Other">Sales: Other</SelectItem>
-                      <SelectItem value="Sales:Photography">Sales: Photography</SelectItem>
-                      <SelectItem value="Sales:Postage">Sales: Postage</SelectItem>
-                      <SelectItem value="Sales:Print">Sales: Print</SelectItem>
-                      <SelectItem value="Sales:Returns">Sales: Returns</SelectItem>
-                      <SelectItem value="Sales:Shipping">Sales: Shipping</SelectItem>
-                      <SelectItem value="Sales:Sign Installation">Sales: Sign Installation</SelectItem>
-                      <SelectItem value="Sales:Signs">Sales: Signs</SelectItem>
-                      <SelectItem value="Sales:Videography">Sales: Videography</SelectItem>
-                      <SelectItem value="Sales:Vinyl">Sales: Vinyl</SelectItem>
-                      <SelectItem value="Sales:Vinyl Installation">Sales: Vinyl Installation</SelectItem>
-                      <SelectItem value="Sales:Web Development">Sales: Web Development</SelectItem>
+                      <SelectItem value="Sales:Apparel">Apparel</SelectItem>
+                      <SelectItem value="Sales:Graphic Design">Graphic Design</SelectItem>
+                      <SelectItem value="Sales:Labor">Labor</SelectItem>
+                      <SelectItem value="Sales:Mail Processing">Mail Processing</SelectItem>
+                      <SelectItem value="Sales:Other">Other</SelectItem>
+                      <SelectItem value="Sales:Photography">Photography</SelectItem>
+                      <SelectItem value="Sales:Postage">Postage</SelectItem>
+                      <SelectItem value="Sales:Print">Print</SelectItem>
+                      <SelectItem value="Sales:Returns">Returns</SelectItem>
+                      <SelectItem value="Sales:Shipping">Shipping</SelectItem>
+                      <SelectItem value="Sales:Sign Installation">Sign Installation</SelectItem>
+                      <SelectItem value="Sales:Signs">Signs</SelectItem>
+                      <SelectItem value="Sales:Videography">Videography</SelectItem>
+                      <SelectItem value="Sales:Vinyl">Vinyl</SelectItem>
+                      <SelectItem value="Sales:Vinyl Installation">Vinyl Installation</SelectItem>
+                      <SelectItem value="Sales:Web Development">Web Development</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

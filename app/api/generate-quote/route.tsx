@@ -100,15 +100,15 @@ export async function POST(request: NextRequest) {
         : []
       const ccEmailList = ["dennis@splitroadmedia.com", ...userCcEmails]
 
-      // Send to client and accounting (as primary recipients), with CC to dennis and user-specified emails
-      console.log("[v0] Sending email to:", data.client.email, "and accounting@splitroadmedia.com")
+      // Send to client, accounting, and hello (as primary recipients), with CC to dennis and user-specified emails
+      console.log("[v0] Sending email to:", data.client.email, "accounting@splitroadmedia.com, and hello@splitroadmedia.com")
       console.log("[v0] CC:", ccEmailList.join(", "))
 
       // Convert PDF buffer to base64 for SendGrid
       const base64PDF = pdfBuffer.toString("base64")
 
       const msg = {
-        to: [data.client.email, "accounting@splitroadmedia.com"],
+        to: [data.client.email, "accounting@splitroadmedia.com", "hello@splitroadmedia.com"],
         cc: ccEmailList,
         from: "hello@splitroadmedia.com",
         subject: `Quote ${data.quote.number} for ${data.client.company}`,
