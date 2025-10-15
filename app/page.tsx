@@ -181,15 +181,22 @@ export default function QuoteForm() {
       })
 
       if (response.ok) {
+        console.log("[v0] Quote generated successfully!")
         const result = await response.json()
+        console.log("[v0] Server response:", result)
+        
         const userCcList = ccEmails.split(',').map(e => e.trim()).filter(e => e.length > 0)
         const allCcEmails = ['dennis@splitroadmedia.com', ...userCcList]
         const ccMessage = allCcEmails.length > 0 ? ` (CC: ${allCcEmails.join(', ')})` : ''
         const message = result.message || `Quote has been generated and sent to ${clientEmail}, accounting@splitroadmedia.com, and hello@splitroadmedia.com${ccMessage}`
         
+        console.log("[v0] Opening success modal with message:", message)
+        
         // Show success modal
         setSuccessMessage(message)
         setShowSuccessModal(true)
+        
+        console.log("[v0] Success modal state set to true")
         
         // Also show toast for backup
         toast({
@@ -197,9 +204,17 @@ export default function QuoteForm() {
           description: message,
         })
       } else {
+        console.error("[v0] Server returned error status:", response.status)
         const errorData = await response.json()
-        const errorMessage = errorData.details || errorData.error || "Failed to generate quote"
         console.error("[v0] Server error details:", errorData)
+        
+        const errorMessage = errorData.details || errorData.error || "Failed to generate quote"
+        
+        // Show additional details if available
+        if (errorData.failedEmails) {
+          console.error("[v0] Failed email addresses:", errorData.failedEmails)
+        }
+        
         throw new Error(errorMessage)
       }
     } catch (error) {

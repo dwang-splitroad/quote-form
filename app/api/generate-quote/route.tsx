@@ -42,9 +42,18 @@ export async function POST(request: NextRequest) {
 
     // Generate PDF using renderToBuffer for proper server-side rendering
     console.log("[v0] Starting PDF render...")
-    const pdfBuffer = await renderToBuffer(<QuotePDF data={dataWithLogo} />)
-
-    console.log("[v0] PDF generated successfully, size:", pdfBuffer.length, "bytes")
+    let pdfBuffer
+    try {
+      pdfBuffer = await renderToBuffer(<QuotePDF data={dataWithLogo} />)
+      console.log("[v0] PDF generated successfully, size:", pdfBuffer.length, "bytes")
+    } catch (pdfError: any) {
+      console.error("[v0] ========== PDF GENERATION ERROR ==========")
+      console.error("[v0] PDF error:", pdfError)
+      console.error("[v0] PDF error message:", pdfError.message)
+      console.error("[v0] PDF error stack:", pdfError.stack)
+      console.error("[v0] ==========================================")
+      throw new Error(`PDF generation failed: ${pdfError.message || 'Unknown PDF error'}`)
+    }
 
     // Upload PDF to Dropbox
     const dropboxToken = process.env.DROPBOX_ACCESS_TOKEN
@@ -78,19 +87,28 @@ export async function POST(request: NextRequest) {
         console.log("[v0] Dropbox config - Team Member ID:", dropboxTeamMemberId)
         console.log("[v0] Dropbox config - Root Namespace:", dropboxRootNamespace)
         
-        const dropboxResult = await dbx.filesUpload({
-          path: dropboxPath,
-          contents: pdfBuffer,
-          mode: { ".tag": "overwrite" }, // Overwrite if file exists
-          autorename: false,
-        })
-        
-        console.log("[v0] PDF uploaded to Dropbox successfully:", dropboxResult.result.path_display)
-      } catch (dropboxError: any) {
-        console.error("[v0] Error uploading to Dropbox:", dropboxError)
-        console.error("[v0] Dropbox error details:", dropboxError.error || dropboxError.message)
-        console.error("[v0] Dropbox error status:", dropboxError.status)
-        // Continue with email sending even if Dropbox upload fails
+        try {
+          const dropboxResult = await dbx.filesUpload({
+            path: dropboxPath,
+            contents: pdfBuffer,
+            mode: { ".tag": "overwrite" }, // Overwrite if file exists
+            autorename: false,
+          })
+          
+          console.log("[v0] PDF uploaded to Dropbox successfully:", dropboxResult.result.path_display)
+        } catch (dropboxError: any) {
+          console.error("[v0] ========== DROPBOX ERROR ==========")
+          console.error("[v0] Error uploading to Dropbox:", dropboxError)
+          console.error("[v0] Dropbox error details:", dropboxError.error || dropboxError.message)
+          console.error("[v0] Dropbox error status:", dropboxError.status)
+          console.error("[v0] =====================================")
+          // Continue with email sending even if Dropbox upload fails
+        }
+      } catch (dropboxConfigError: any) {
+        console.error("[v0] ========== DROPBOX CONFIG ERROR ==========")
+        console.error("[v0] Dropbox configuration error:", dropboxConfigError)
+        console.error("[v0] ===========================================")
+        // Continue with email sending even if Dropbox setup fails
       }
     } else {
       console.log("[v0] No DROPBOX_ACCESS_TOKEN found, skipping Dropbox upload")
@@ -99,8 +117,9 @@ export async function POST(request: NextRequest) {
     // Check if SendGrid API key is loaded
     const apiKey = process.env.SENDGRID_API_KEY
     console.log("[v0] SENDGRID_API_KEY exists:", !!apiKey)
+    console.log("[v0] SENDGRID_API_KEY value (first 10 chars):", apiKey ? apiKey.substring(0, 10) : 'NOT SET')
 
-    if (apiKey) {
+    if (apiKey && apiKey !== 'your_sendgrid_api_key_here') {
       // Configure SendGrid
       sgMail.setApiKey(apiKey)
 
@@ -117,9 +136,13 @@ export async function POST(request: NextRequest) {
       // Convert PDF buffer to base64 for SendGrid
       const base64PDF = pdfBuffer.toString("base64")
 
+      // Validate all email addresses
+      const allEmails = [data.client.email, "accounting@splitroadmedia.com", "hello@splitroadmedia.com", ...ccEmailList]
+      console.log("[v0] All email addresses to send to:", allEmails)
+      
       const msg = {
         to: [data.client.email, "accounting@splitroadmedia.com", "hello@splitroadmedia.com"],
-        cc: ccEmailList,
+        cc: ccEmailList.length > 0 ? ccEmailList : undefined,
         from: "hello@splitroadmedia.com",
         subject: `Quote ${data.quote.number} for ${data.client.company}`,
         html: `
@@ -242,9 +265,41 @@ export async function POST(request: NextRequest) {
         ],
       }
 
-      const emailResult = await sgMail.send(msg)
+      console.log("[v0] Attempting to send email with config:", {
+        to: msg.to,
+        cc: msg.cc,
+        from: msg.from,
+        subject: msg.subject,
+        hasAttachment: !!msg.attachments && msg.attachments.length > 0
+      })
 
-      console.log("[v0] Email sent successfully:", emailResult[0].statusCode)
+      let emailResult
+      try {
+        emailResult = await sgMail.send(msg)
+        console.log("[v0] Email sent successfully:", emailResult[0].statusCode)
+        console.log("[v0] Email sent to:", allEmails.join(", "))
+      } catch (emailError: any) {
+        console.error("[v0] ========== SENDGRID ERROR ==========")
+        console.error("[v0] SendGrid error:", emailError)
+        console.error("[v0] SendGrid error message:", emailError.message)
+        console.error("[v0] SendGrid error code:", emailError.code)
+        console.error("[v0] SendGrid error status:", emailError.status)
+        console.error("[v0] SendGrid error response:", JSON.stringify(emailError.response?.body, null, 2))
+        console.error("[v0] Failed email addresses:", allEmails.join(", "))
+        console.error("[v0] =======================================")
+        
+        // Return more detailed error to frontend
+        return NextResponse.json(
+          {
+            error: "Email sending failed",
+            details: emailError.response?.body?.errors?.[0]?.message || emailError.message || 'Unknown SendGrid error',
+            code: emailError.code,
+            status: emailError.status,
+            failedEmails: allEmails,
+          },
+          { status: 500 },
+        )
+      }
 
       return NextResponse.json({
         success: true,
@@ -252,16 +307,18 @@ export async function POST(request: NextRequest) {
         emailStatusCode: emailResult[0].statusCode,
       })
     } else {
-      console.log("[v0] No SENDGRID_API_KEY found, returning PDF as download")
-
-      // If no email service configured, return PDF as download
-      return new NextResponse(pdfBuffer, {
-        status: 200,
-        headers: {
-          "Content-Type": "application/pdf",
-          "Content-Disposition": `attachment; filename="quote-${data.quote.number}.pdf"`,
+      console.error("[v0] No valid SENDGRID_API_KEY found - cannot send email")
+      console.error("[v0] Please set SENDGRID_API_KEY environment variable in production")
+      console.error("[v0] Current API key value:", apiKey || 'NOT SET')
+      
+      // Return error instead of PDF download
+      return NextResponse.json(
+        {
+          error: "Email service not configured",
+          details: "SendGrid API key is missing or invalid. Please configure SENDGRID_API_KEY in environment variables.",
         },
-      })
+        { status: 500 },
+      )
     }
   } catch (error) {
     console.error("[v0] ========== ERROR GENERATING QUOTE ==========")
