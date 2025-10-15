@@ -19,11 +19,20 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Starting PDF generation for quote:", data.quote.number)
     console.log("[v0] Environment check - SENDGRID_API_KEY:", !!process.env.SENDGRID_API_KEY)
     console.log("[v0] Environment check - DROPBOX_ACCESS_TOKEN:", !!process.env.DROPBOX_ACCESS_TOKEN)
+    console.log("[v0] Current working directory:", process.cwd())
 
     // Read logo file and convert to base64
     const logoPath = path.join(process.cwd(), "public", "splitroadmedia.png")
+    console.log("[v0] Looking for logo at:", logoPath)
+    
+    if (!fs.existsSync(logoPath)) {
+      console.error("[v0] Logo file not found at:", logoPath)
+      throw new Error(`Logo file not found at ${logoPath}`)
+    }
+    
     const logoBuffer = fs.readFileSync(logoPath)
     const logoBase64 = `data:image/png;base64,${logoBuffer.toString("base64")}`
+    console.log("[v0] Logo loaded successfully, size:", logoBuffer.length, "bytes")
 
     // Add logo to data
     const dataWithLogo = {
@@ -32,6 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate PDF using renderToBuffer for proper server-side rendering
+    console.log("[v0] Starting PDF render...")
     const pdfBuffer = await renderToBuffer(<QuotePDF data={dataWithLogo} />)
 
     console.log("[v0] PDF generated successfully, size:", pdfBuffer.length, "bytes")
@@ -254,12 +264,18 @@ export async function POST(request: NextRequest) {
       })
     }
   } catch (error) {
-    console.error("[v0] Error generating quote:", error)
+    console.error("[v0] ========== ERROR GENERATING QUOTE ==========")
+    console.error("[v0] Error type:", error?.constructor?.name)
+    console.error("[v0] Error message:", error instanceof Error ? error.message : String(error))
     console.error("[v0] Error stack:", error instanceof Error ? error.stack : 'No stack trace')
+    console.error("[v0] Full error object:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2))
+    console.error("[v0] =============================================")
+    
     return NextResponse.json(
       {
         error: "Failed to generate quote",
         details: error instanceof Error ? error.message : String(error),
+        type: error?.constructor?.name || 'Unknown',
       },
       { status: 500 },
     )

@@ -198,7 +198,9 @@ export default function QuoteForm() {
         })
       } else {
         const errorData = await response.json()
-        throw new Error(errorData.details || errorData.error || "Failed to generate quote")
+        const errorMessage = errorData.details || errorData.error || "Failed to generate quote"
+        console.error("[v0] Server error details:", errorData)
+        throw new Error(errorMessage)
       }
     } catch (error) {
       console.error("[v0] Error submitting quote:", error)
