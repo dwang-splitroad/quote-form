@@ -13,9 +13,12 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("[v0] Received quote generation request")
     const data = await request.json()
 
     console.log("[v0] Starting PDF generation for quote:", data.quote.number)
+    console.log("[v0] Environment check - SENDGRID_API_KEY:", !!process.env.SENDGRID_API_KEY)
+    console.log("[v0] Environment check - DROPBOX_ACCESS_TOKEN:", !!process.env.DROPBOX_ACCESS_TOKEN)
 
     // Read logo file and convert to base64
     const logoPath = path.join(process.cwd(), "public", "splitroadmedia.png")
@@ -53,15 +56,17 @@ export async function POST(request: NextRequest) {
         // Use team root namespace to access team space folders
         if (dropboxRootNamespace) {
           dbxConfig.pathRoot = JSON.stringify({
-            ".tag": "root",
-            "root": dropboxRootNamespace
+            ".tag": "namespace_id",
+            "namespace_id": dropboxRootNamespace
           })
         }
         
         const dbx = new Dropbox(dbxConfig)
-        const dropboxPath = `/Jobs/Quotes/quote-${data.quote.number}.pdf`
+        const dropboxPath = `/Quotes/quote-${data.quote.number}.pdf`
         
         console.log("[v0] Uploading PDF to Dropbox:", dropboxPath)
+        console.log("[v0] Dropbox config - Team Member ID:", dropboxTeamMemberId)
+        console.log("[v0] Dropbox config - Root Namespace:", dropboxRootNamespace)
         
         const dropboxResult = await dbx.filesUpload({
           path: dropboxPath,
@@ -71,8 +76,10 @@ export async function POST(request: NextRequest) {
         })
         
         console.log("[v0] PDF uploaded to Dropbox successfully:", dropboxResult.result.path_display)
-      } catch (dropboxError) {
+      } catch (dropboxError: any) {
         console.error("[v0] Error uploading to Dropbox:", dropboxError)
+        console.error("[v0] Dropbox error details:", dropboxError.error || dropboxError.message)
+        console.error("[v0] Dropbox error status:", dropboxError.status)
         // Continue with email sending even if Dropbox upload fails
       }
     } else {
@@ -179,18 +186,18 @@ export async function POST(request: NextRequest) {
                 </div>
                 
                 <!-- Attachment Notice -->
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; padding: 25px; text-align: center; margin-bottom: 30px;">
-                  <p style="color: #ffffff; font-size: 16px; font-weight: 600; margin: 0 0 10px 0;">
+                <div style="background-color: #f8f9fa; border: 2px solid #667eea; border-radius: 8px; padding: 25px; text-align: center; margin-bottom: 30px;">
+                  <p style="color: #000000; font-size: 16px; font-weight: 600; margin: 0 0 10px 0;">
                     📎 Complete Quote Details
                   </p>
-                  <p style="color: #ffffff; font-size: 14px; margin: 0; opacity: 0.95;">
+                  <p style="color: #000000; font-size: 14px; margin: 0;">
                     Please see the attached PDF for the complete itemized quote with pricing and terms.
                   </p>
                 </div>
                 
                 <!-- Contact Section -->
                 <div style="text-align: center; padding-top: 20px; border-top: 2px solid #e9ecef;">
-                  <p style="color: #666666; font-size: 14px; margin: 0 0 15px 0;">
+                  <p style="color: #000000; font-size: 14px; margin: 0 0 15px 0;">
                     Questions about your quote? We're here to help!
                   </p>
                   <p style="color: #333333; font-size: 14px; margin: 0 0 5px 0;">
@@ -248,6 +255,7 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error("[v0] Error generating quote:", error)
+    console.error("[v0] Error stack:", error instanceof Error ? error.stack : 'No stack trace')
     return NextResponse.json(
       {
         error: "Failed to generate quote",
