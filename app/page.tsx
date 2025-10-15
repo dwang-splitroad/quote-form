@@ -11,6 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface LineItem {
   project: string
@@ -27,6 +35,8 @@ interface TableSection {
 export default function QuoteForm() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [successMessage, setSuccessMessage] = useState("")
 
   // Company Info
   const [companyAddress, setCompanyAddress] = useState("824 1/2 Main Street\nRochester, IN 46975")
@@ -175,9 +185,16 @@ export default function QuoteForm() {
         const userCcList = ccEmails.split(',').map(e => e.trim()).filter(e => e.length > 0)
         const allCcEmails = ['dennis@splitroadmedia.com', ...userCcList]
         const ccMessage = allCcEmails.length > 0 ? ` (CC: ${allCcEmails.join(', ')})` : ''
+        const message = result.message || `Quote has been generated and sent to ${clientEmail}, accounting@splitroadmedia.com, and hello@splitroadmedia.com${ccMessage}`
+        
+        // Show success modal
+        setSuccessMessage(message)
+        setShowSuccessModal(true)
+        
+        // Also show toast for backup
         toast({
           title: "Success!",
-          description: result.message || `Quote has been generated and sent to ${clientEmail}, accounting@splitroadmedia.com, and hello@splitroadmedia.com${ccMessage}`,
+          description: message,
         })
       } else {
         const errorData = await response.json()
@@ -556,6 +573,44 @@ export default function QuoteForm() {
           </form>
         </div>
       </Card>
+
+      {/* Success Modal */}
+      <AlertDialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+              <svg
+                className="h-10 w-10 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+            <AlertDialogTitle className="text-center text-2xl font-bold text-green-600">
+              Quote Generated Successfully! 🎉
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-base pt-2">
+              {successMessage}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-center">
+            <Button
+              onClick={() => setShowSuccessModal(false)}
+              className="w-full sm:w-auto bg-primary hover:bg-primary/90"
+            >
+              Close
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
