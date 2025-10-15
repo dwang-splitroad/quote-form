@@ -250,8 +250,16 @@ export function QuotePDF({ data }: QuotePDFProps) {
                 <View style={styles.descriptionCol}>
                   {item.project && <Text style={{ fontWeight: "bold", marginBottom: 3 }}>{item.project}</Text>}
                   {item.description.split("\n").map((line, i) => (
-                    <Text key={i} style={line.trim().startsWith("•") ? styles.bullet : {}}>
-                      {line}
+                    <Text 
+                      key={i} 
+                      style={{ 
+                        marginTop: i > 0 ? 4 : 0,
+                        fontFamily: 'Courier',
+                        fontSize: 9,
+                        lineHeight: 1.5
+                      }}
+                    >
+                      {line || ' '}
                     </Text>
                   ))}
                 </View>

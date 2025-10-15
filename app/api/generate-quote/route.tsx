@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
                   ${data.tables.map((table, index) => `
                     <div style="margin-bottom: ${index < data.tables.length - 1 ? '25px' : '0'};">
                       <h3 style="color: #667eea; font-size: 16px; font-weight: 700; margin: 0 0 15px 0; padding-bottom: 10px; border-bottom: 2px solid #e9ecef;">
-                        ${table.department}
+                        ${table.department.replace('Sales:', '').trim()}
                       </h3>
                       <table style="width: 100%; border-collapse: collapse;">
                         ${table.lineItems.map(item => `
